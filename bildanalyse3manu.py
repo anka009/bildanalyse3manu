@@ -161,16 +161,14 @@ final_img = final_img.convert("RGB")
 # Konvertiere sicher zu NumPy Array
 show_img_np = np.array(final_img)
 
-# Streamlit zeigt Array
+# Streamlit zeigt Array (einmal, korrekt eingerückt)
 st.image(show_img_np, caption="🎯 Bild mit automatischen + manuellen Punkten", use_container_width=True)
 
-        st.image(show_img, caption="🎯 Bild mit automatischen + manuellen Punkten", use_container_width=True)
-
-        # Statistik
-        st.markdown("---")
-        col_a, col_b = st.columns(2)
-        col_a.metric("Automatische Flecken", len(centers))
-        col_b.metric("Manuelle Punkte", len(st.session_state["manual_points"]))
+# Statistik
+st.markdown("---")
+col_a, col_b = st.columns(2)
+col_a.metric("Automatische Flecken", len(centers))
+col_b.metric("Manuelle Punkte", len(st.session_state["manual_points"]))
 
 # -----------------------
 # Kreis-Ausschnitt-Modus (unverändert)
