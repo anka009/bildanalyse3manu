@@ -113,8 +113,15 @@ def kreis_modus():
              (center_x + radius, center_y + radius)],
             outline=circle_color, width=circle_width
         )
-        st.image(draw_img, caption="🖼️ Kreis-Vorschau", use_container_width=True)
-
+# Ergebnisbild anzeigen – robust gegen Typfehler
+try:
+    st.write("Typ von draw_img:", type(draw_img))  # Debug-Ausgabe
+    st.image(np.array(draw_img),
+             caption="🎯 Ergebnisbild mit Markierungen",
+             use_container_width=True)
+except Exception as e:
+    st.error(f"Fehler beim Anzeigen des Bildes: {e}")
+        
     if st.checkbox("🎬 Nur Ausschnitt anzeigen"):
         mask = Image.new("L", (w, h), 0)
         mask_draw = ImageDraw.Draw(mask)
