@@ -44,17 +44,24 @@ if st.sidebar.button("💾 Preset speichern"):
 # === Bild-Upload ===
 bilddatei = st.file_uploader("📷 Bild hochladen", type=["jpg", "jpeg", "png"])
 if bilddatei:
-    bild = Image.open(bilddatei)
-    st.image(bild, caption="Originalbild", use_column_width=True)
+    bild = Image.open(bilddatei).convert("RGB")
+    bild_np = np.array(bild)
 
-    # Beispielhafte Verarbeitung (Dummy-Logik)
-    st.write("🔧 Analyseparameter:")
-    st.write(f"- Min. Fleckengröße: {min_fleck}")
-    st.write(f"- Max. Fleckengröße: {max_fleck}")
-    st.write(f"- Gruppendurchmesser: {gruppendurchmesser}")
-    st.write(f"- Intensitätsschwelle: {intensitaetsschwelle}")
-    st.write(f"- Liniendicke: {liniendicke}")
-    st.write(f"- Fleckenradius: {flecken_radius}")
+    # === Bildanalyse mit OpenCV ===
+    grau = cv2.cvtColor(bild_np, cv2.COLOR_RGB2GRAY)
+    _, schwelle = cv2.threshold(grau, int(intensitaetsschwelle * 255), 255, cv2.THRESH_BINARY)
 
-    # Hier könntest du deine Bildverarbeitung mit OpenCV einbauen
-    # z. B. Umwandlung in Graustufen, Schwellenwert, Konturen etc.
+    konturen, _ = cv2.findContours(schwelle, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    analysiert = bild_np.copy()
+
+    for kontur in konturen:
+        flaeche = cv2.contourArea(kontur)
+        if min_fleck <= flaeche <= max_fleck:
+            (x, y), radius = cv2.minEnclosingCircle(kontur)
+            if radius <= flecken_radius:
+                cv2.circle(analysiert, (int(x), int(y)), int(radius), (255, 0, 0), liniendicke)
+
+    # === Anzeige: Original & Analysebild
+    col1, col2 = st.columns(2)
+    col1.image(bild, caption="📷 Originalbild", use_column_width=True)
+    col2.image(analysiert, caption="🧪 Analysebild", use_column_width=True)
