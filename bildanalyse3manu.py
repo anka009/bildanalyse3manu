@@ -62,245 +62,82 @@ spot_radius  = st.sidebar.slider("🔘 Flecken-Radius", 1, 20, 10, key="spot_rad
 # -----------------------
 # Fleckengruppen-Modus
 # -----------------------
+from streamlit_image_coordinates import streamlit_image_coordinates
+from PIL import Image, ImageDraw
+import numpy as np
+
 def fleckengruppen_modus():
+    global img_rgb, img_array  # Zugriff auf globales Originalbild
+
     st.subheader("🧠 Fleckengruppen erkennen")
     col1, col2 = st.columns([1, 2])
 
     with col1:
-        # --- Speicher/Lade-Bereich ---
-        st.markdown("### 💾 Analyse-Parameter speichern/laden")
-        slot = st.selectbox("Speicherplatz wählen", [1, 2, 3, 4], key="slot_selectbox")
-
-        with st.form(key="preset_form"):
-            save_clicked = st.form_submit_button("📥 In Slot speichern")
-            load_clicked = st.form_submit_button("📤 Aus Slot laden")
-
-        # Laden: Defaults + Widget-Keys setzen, dann rerun
-        if load_clicked:
-            preset_key = f"preset{slot}"
-            if preset_key in st.session_state:
-                params = st.session_state[preset_key]
-
-                # Defaults für nächsten Rerun
-                st.session_state["loaded_min_area"]       = params["min_area"]
-                st.session_state["loaded_max_area"]       = params["max_area"]
-                st.session_state["loaded_group_diameter"] = params["group_diameter"]
-                st.session_state["loaded_intensity"]      = params["intensity"]
-
-                # WICHTIG: auch die Widget-Keys direkt setzen
-                st.session_state["min_area"]       = params["min_area"]
-                st.session_state["max_area"]       = params["max_area"]
-                st.session_state["group_diameter"] = params["group_diameter"]
-                st.session_state["intensity"]      = params["intensity"]
-
-                st.sidebar.info(f"📤 Slot {slot} geladen – Slider werden angepasst …")
-                st.rerun()
-            else:
-                st.sidebar.warning(f"⚠️ Slot {slot} ist leer.")
-
-        # --- Slider mit Defaults aus Session State ---
-        min_default       = st.session_state.get("loaded_min_area", 30)
-        max_default       = st.session_state.get("loaded_max_area", 250)
-        group_default     = st.session_state.get("loaded_group_diameter", 60)
-        intensity_default = st.session_state.get("loaded_intensity", 25)
-
-        x_start = st.slider("Start-X", 0, w - 1, 0, key="x_start")
-        x_end   = st.slider("End-X", x_start + 1, w, w, key="x_end")
-        y_start = st.slider("Start-Y", 0, h - 1, 0, key="y_start")
-        y_end   = st.slider("End-Y", y_start + 1, h, h, key="y_end")
-
-        min_area = st.slider("Minimale Fleckengröße", 10, 500, value=min_default, key="min_area")
-        max_default = max(max_default, min_area)  # sicherstellen, dass max >= min
-        max_area = st.slider("Maximale Fleckengröße", min_area, 1000, value=max_default, key="max_area")
-        group_diameter = st.slider("Gruppendurchmesser", 20, 500, value=group_default, key="group_diameter")
-        intensity = st.slider("Intensitäts-Schwelle", 0, 255, value=intensity_default, key="intensity")
-
-        # Speichern
-        if save_clicked:
-            st.session_state[f"preset{slot}"] = {
-                "min_area": min_area,
-                "max_area": max_area,
-                "group_diameter": group_diameter,
-                "intensity": intensity,
-            }
-            st.sidebar.success(f"✅ Parameter in Slot {slot} gespeichert!")
-
-        # Anzeige der gespeicherten Werte
-        if f"preset{slot}" in st.session_state:
-            st.sidebar.write("🔎 Gespeicherte Werte in diesem Slot:")
-            st.sidebar.json(st.session_state[f"preset{slot}"])
-
-    with col2:
-        cropped_array = img_array[y_start:y_end, x_start:x_end]
-        centers = finde_flecken(cropped_array, min_area, max_area, intensity)
-        grouped = gruppiere_flecken(centers, group_diameter)
-
-        draw_img = img_rgb.copy()
-        draw = ImageDraw.Draw(draw_img)
-
-        for x, y in centers:
-            draw.ellipse(
-                [(x + x_start - spot_radius, y + y_start - spot_radius),
-                 (x + x_start + spot_radius, y + y_start + spot_radius)],
-                fill=spot_color
-            )
-
-        for gruppe in grouped:
-            if gruppe:
-                xs, ys = zip(*gruppe)
-                x_mean = int(np.mean(xs))
-                y_mean = int(np.mean(ys))
-                radius = group_diameter / 2
-                draw.ellipse(
-                    [(x_mean + x_start - radius, y_mean + y_start - radius),
-                     (x_mean + x_start + radius, y_mean + y_start + radius)],
-                    outline=circle_color, width=circle_width
-                )
-
-        st.image(draw_img, caption="🎯 Ergebnisbild mit Markierungen", use_container_width=True)
-        st.markdown("---")
-        st.markdown("### 🧮 Ergebnisse")
-        col_fleck, col_gruppe = st.columns(2)
-        col_fleck.metric("Erkannte Flecken", len(centers))
-        col_gruppe.metric("Erkannte Gruppen", len(grouped))
-from streamlit_image_coordinates import streamlit_image_coordinates
-
-from streamlit_image_coordinates import streamlit_image_coordinates
-
-def fleckengruppen_modus():
-    st.subheader("🧠 Fleckengruppen erkennen")
-    col1, col2 = st.columns([1, 2])  # Wichtig: Beide Spalten innerhalb der Funktion definieren!
-
-    # ------------------------------------
-    # 📊 Linke Spalte: Parameter-Einstellungen
-    # ------------------------------------
-    with col1:
-        st.markdown("### 💾 Analyse-Parameter speichern/laden")
-        slot = st.selectbox("Speicherplatz wählen", [1, 2, 3, 4], key="slot_selectbox")
-
-        with st.form(key="preset_form"):
-            save_clicked = st.form_submit_button("📥 In Slot speichern")
-            load_clicked = st.form_submit_button("📤 Aus Slot laden")
-
-        if load_clicked:
-            preset_key = f"preset{slot}"
-            if preset_key in st.session_state:
-                params = st.session_state[preset_key]
-                st.session_state.update({
-                    "min_area": params["min_area"],
-                    "max_area": params["max_area"],
-                    "group_diameter": params["group_diameter"],
-                    "intensity": params["intensity"]
-                })
-                st.sidebar.info(f"📤 Slot {slot} geladen – Slider werden angepasst …")
-                st.rerun()
-            else:
-                st.sidebar.warning(f"⚠️ Slot {slot} ist leer.")
-
+        st.markdown("### Analyse-Parameter")
         min_area = st.slider("Minimale Fleckengröße", 10, 500, 30, key="min_area")
         max_area = st.slider("Maximale Fleckengröße", min_area, 1000, 250, key="max_area")
         group_diameter = st.slider("Gruppendurchmesser", 20, 500, 60, key="group_diameter")
         intensity = st.slider("Intensitäts-Schwelle", 0, 255, 25, key="intensity")
 
-        if save_clicked:
-            st.session_state[f"preset{slot}"] = {
-                "min_area": min_area,
-                "max_area": max_area,
-                "group_diameter": group_diameter,
-                "intensity": intensity,
-            }
-            st.sidebar.success(f"✅ Parameter in Slot {slot} gespeichert!")
-
-    # ------------------------------------
-    # 🖼️ Rechte Spalte: Bilddarstellung & Klicks
-    # ------------------------------------
     with col2:
-        cropped_array = img_array
-        centers = finde_flecken(cropped_array, min_area, max_area, intensity)
-        grouped = gruppiere_flecken(centers, group_diameter)
+        # ===========================
+        # 1️⃣ Originalgröße sichern
+        # ===========================
+        orig_w, orig_h = img_rgb.size
 
-        # Session-State für manuelle Punkte
-        if "manual_points" not in st.session_state:
-            st.session_state["manual_points"] = []
+        # ===========================
+        # 2️⃣ Bild fürs Frontend skalieren
+        # ===========================
+        display_w = 800  # feste Breite (stabil für Cloud)
+        scale = display_w / orig_w
+        display_h = int(orig_h * scale)
+        display_img = img_rgb.resize((display_w, display_h))
 
-        # Basisbild vorbereiten
-        draw_img = img_rgb.copy()
-        draw = ImageDraw.Draw(draw_img)
+        # ===========================
+        # 3️⃣ Klick-Koordinaten erfassen (auf skaliertem Bild)
+        # ===========================
+        clicked = streamlit_image_coordinates(display_img, key="click_img")
 
-        # Automatische Punkte (cyan)
-        for x, y in centers:
-            draw.ellipse(
-                [(x - spot_radius, y - spot_radius),
-                 (x + spot_radius, y + spot_radius)],
-                fill=spot_color
-            )
-
-        # Manuelle Punkte (grün)
-        for x, y in st.session_state["manual_points"]:
-            draw.ellipse(
-                [(x - spot_radius, y - spot_radius),
-                 (x + spot_radius, y + spot_radius)],
-                fill="#00FF00"
-            )
-
-        # Gruppenkreise (rot)
-        for gruppe in grouped:
-            if gruppe:
-                xs, ys = zip(*gruppe)
-                x_mean, y_mean = int(np.mean(xs)), int(np.mean(ys))
-                radius = group_diameter / 2
-                draw.ellipse(
-                    [(x_mean - radius, y_mean - radius),
-                     (x_mean + radius, y_mean + radius)],
-                    outline=circle_color, width=circle_width
-                )
-
-        # ------------------------------
-        # Klickfunktion aktivieren
-        # ------------------------------
-        st.markdown("### 🖱️ Klicke ins Bild, um manuelle Punkte hinzuzufügen")
-        clicked = streamlit_image_coordinates(draw_img, key="click_img")
-
+        # ===========================
+        # 4️⃣ Klick-Koordinaten rückskalieren
+        # ===========================
         if clicked is not None:
-            x_click, y_click = int(clicked["x"]), int(clicked["y"])
-            st.session_state["manual_points"].append((x_click, y_click))
+            x_scaled, y_scaled = int(clicked["x"] / scale), int(clicked["y"] / scale)
+
+            if "manual_points" not in st.session_state:
+                st.session_state["manual_points"] = []
+
+            st.session_state["manual_points"].append((x_scaled, y_scaled))
             st.rerun()
 
-        # ------------------------------
-        # Buttons für Punktverwaltung
-        # ------------------------------
-        colb1, colb2 = st.columns(2)
-        if colb1.button("❌ Letzten Punkt löschen"):
-            if st.session_state["manual_points"]:
-                st.session_state["manual_points"].pop()
-                st.rerun()
-        if colb2.button("♻️ Alle manuell gesetzten Punkte löschen"):
-            st.session_state["manual_points"].clear()
-            st.rerun()
-
-        # ------------------------------
-        # Endergebnis darstellen
-        # ------------------------------
+        # ===========================
+        # 5️⃣ Bild mit Punkten zeichnen
+        # ===========================
         final_img = img_rgb.copy()
-        draw_final = ImageDraw.Draw(final_img)
+        draw = ImageDraw.Draw(final_img)
 
-        # Automatische Punkte
+        # automatische Flecken
+        centers = finde_flecken(img_array, min_area, max_area, intensity)
         for x, y in centers:
-            draw_final.ellipse(
-                [(x - spot_radius, y - spot_radius),
-                 (x + spot_radius, y + spot_radius)],
-                fill=spot_color
-            )
+            draw.ellipse([(x - 4, y - 4), (x + 4, y + 4)], fill="#00FFFF")
 
-        # Manuelle Punkte
-        for x, y in st.session_state["manual_points"]:
-            draw_final.ellipse(
-                [(x - spot_radius, y - spot_radius),
-                 (x + spot_radius, y + spot_radius)],
-                fill="#00FF00"
-            )
+        # manuelle Punkte
+        for x, y in st.session_state.get("manual_points", []):
+            draw.ellipse([(x - 4, y - 4), (x + 4, y + 4)], fill="#00FF00")
 
-        st.image(final_img, caption="🎯 Bild mit automatischen + manuellen Punkten", use_container_width=True)
+        # ===========================
+        # 6️⃣ Anzeige fürs Frontend skalieren
+        # ===========================
+        show_img = final_img.resize((display_w, display_h))
+        st.image(show_img, caption="🎯 Bild mit automatischen + manuellen Punkten", use_container_width=True)
+
+        # ===========================
+        # 7️⃣ Statistik anzeigen
+        # ===========================
+        st.markdown("---")
+        col_a, col_b = st.columns(2)
+        col_a.metric("Automatische Flecken", len(centers))
+        col_b.metric("Manuelle Punkte", len(st.session_state.get("manual_points", [])))
 
 # -----------------------
 # Kreis-Ausschnitt-Modus (unverändert)
