@@ -165,10 +165,57 @@ def fleckengruppen_modus():
         col_gruppe.metric("Erkannte Gruppen", len(grouped))
 from streamlit_image_coordinates import streamlit_image_coordinates
 
+from streamlit_image_coordinates import streamlit_image_coordinates
+
 def fleckengruppen_modus():
-    ...
+    st.subheader("🧠 Fleckengruppen erkennen")
+    col1, col2 = st.columns([1, 2])  # Wichtig: Beide Spalten innerhalb der Funktion definieren!
+
+    # ------------------------------------
+    # 📊 Linke Spalte: Parameter-Einstellungen
+    # ------------------------------------
+    with col1:
+        st.markdown("### 💾 Analyse-Parameter speichern/laden")
+        slot = st.selectbox("Speicherplatz wählen", [1, 2, 3, 4], key="slot_selectbox")
+
+        with st.form(key="preset_form"):
+            save_clicked = st.form_submit_button("📥 In Slot speichern")
+            load_clicked = st.form_submit_button("📤 Aus Slot laden")
+
+        if load_clicked:
+            preset_key = f"preset{slot}"
+            if preset_key in st.session_state:
+                params = st.session_state[preset_key]
+                st.session_state.update({
+                    "min_area": params["min_area"],
+                    "max_area": params["max_area"],
+                    "group_diameter": params["group_diameter"],
+                    "intensity": params["intensity"]
+                })
+                st.sidebar.info(f"📤 Slot {slot} geladen – Slider werden angepasst …")
+                st.rerun()
+            else:
+                st.sidebar.warning(f"⚠️ Slot {slot} ist leer.")
+
+        min_area = st.slider("Minimale Fleckengröße", 10, 500, 30, key="min_area")
+        max_area = st.slider("Maximale Fleckengröße", min_area, 1000, 250, key="max_area")
+        group_diameter = st.slider("Gruppendurchmesser", 20, 500, 60, key="group_diameter")
+        intensity = st.slider("Intensitäts-Schwelle", 0, 255, 25, key="intensity")
+
+        if save_clicked:
+            st.session_state[f"preset{slot}"] = {
+                "min_area": min_area,
+                "max_area": max_area,
+                "group_diameter": group_diameter,
+                "intensity": intensity,
+            }
+            st.sidebar.success(f"✅ Parameter in Slot {slot} gespeichert!")
+
+    # ------------------------------------
+    # 🖼️ Rechte Spalte: Bilddarstellung & Klicks
+    # ------------------------------------
     with col2:
-        cropped_array = img_array[y_start:y_end, x_start:x_end]
+        cropped_array = img_array
         centers = finde_flecken(cropped_array, min_area, max_area, intensity)
         grouped = gruppiere_flecken(centers, group_diameter)
 
@@ -176,15 +223,15 @@ def fleckengruppen_modus():
         if "manual_points" not in st.session_state:
             st.session_state["manual_points"] = []
 
-        # --- Basierend auf Analyse zeichnen ---
+        # Basisbild vorbereiten
         draw_img = img_rgb.copy()
         draw = ImageDraw.Draw(draw_img)
 
         # Automatische Punkte (cyan)
         for x, y in centers:
             draw.ellipse(
-                [(x + x_start - spot_radius, y + y_start - spot_radius),
-                 (x + x_start + spot_radius, y + y_start + spot_radius)],
+                [(x - spot_radius, y - spot_radius),
+                 (x + spot_radius, y + spot_radius)],
                 fill=spot_color
             )
 
@@ -200,49 +247,52 @@ def fleckengruppen_modus():
         for gruppe in grouped:
             if gruppe:
                 xs, ys = zip(*gruppe)
-                x_mean = int(np.mean(xs))
-                y_mean = int(np.mean(ys))
+                x_mean, y_mean = int(np.mean(xs)), int(np.mean(ys))
                 radius = group_diameter / 2
                 draw.ellipse(
-                    [(x_mean + x_start - radius, y_mean + y_start - radius),
-                     (x_mean + x_start + radius, y_mean + y_start + radius)],
+                    [(x_mean - radius, y_mean - radius),
+                     (x_mean + radius, y_mean + radius)],
                     outline=circle_color, width=circle_width
                 )
 
-        st.markdown("### 🖱️ Manuelle Punktbearbeitung")
+        # ------------------------------
+        # Klickfunktion aktivieren
+        # ------------------------------
+        st.markdown("### 🖱️ Klicke ins Bild, um manuelle Punkte hinzuzufügen")
+        clicked = streamlit_image_coordinates(draw_img, key="click_img")
 
-        # Interaktive Klickerfassung
-        clicked_point = streamlit_image_coordinates(draw_img, key="click_image")
-
-        if clicked_point is not None:
-            x_click, y_click = int(clicked_point["x"]), int(clicked_point["y"])
-            st.write(f"🟢 Geklickt bei: ({x_click}, {y_click})")
-
-            # Punkt speichern
+        if clicked is not None:
+            x_click, y_click = int(clicked["x"]), int(clicked["y"])
             st.session_state["manual_points"].append((x_click, y_click))
             st.rerun()
 
-        # Buttons zur Verwaltung
-        col_btn1, col_btn2 = st.columns(2)
-        if col_btn1.button("❌ Letzten Punkt löschen"):
+        # ------------------------------
+        # Buttons für Punktverwaltung
+        # ------------------------------
+        colb1, colb2 = st.columns(2)
+        if colb1.button("❌ Letzten Punkt löschen"):
             if st.session_state["manual_points"]:
                 st.session_state["manual_points"].pop()
                 st.rerun()
-        if col_btn2.button("♻️ Alle manuell gesetzten Punkte löschen"):
+        if colb2.button("♻️ Alle manuell gesetzten Punkte löschen"):
             st.session_state["manual_points"].clear()
             st.rerun()
 
-        # Anzeige mit Punkten
+        # ------------------------------
+        # Endergebnis darstellen
+        # ------------------------------
         final_img = img_rgb.copy()
         draw_final = ImageDraw.Draw(final_img)
 
-        # Neu zeichnen mit allen Punkten
+        # Automatische Punkte
         for x, y in centers:
             draw_final.ellipse(
-                [(x + x_start - spot_radius, y + y_start - spot_radius),
-                 (x + x_start + spot_radius, y + y_start + spot_radius)],
+                [(x - spot_radius, y - spot_radius),
+                 (x + spot_radius, y + spot_radius)],
                 fill=spot_color
             )
+
+        # Manuelle Punkte
         for x, y in st.session_state["manual_points"]:
             draw_final.ellipse(
                 [(x - spot_radius, y - spot_radius),
@@ -250,7 +300,7 @@ def fleckengruppen_modus():
                 fill="#00FF00"
             )
 
-        st.image(final_img, caption="🎯 Bild mit automatischen und manuellen Punkten", use_container_width=True)
+        st.image(final_img, caption="🎯 Bild mit automatischen + manuellen Punkten", use_container_width=True)
 
 # -----------------------
 # Kreis-Ausschnitt-Modus (unverändert)
