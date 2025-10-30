@@ -163,6 +163,96 @@ def fleckengruppen_modus():
         col_fleck, col_gruppe = st.columns(2)
         col_fleck.metric("Erkannte Flecken", len(centers))
         col_gruppe.metric("Erkannte Gruppen", len(grouped))
+from streamlit_drawable_canvas import st_canvas
+
+def fleckengruppen_modus():
+    ...
+    with col2:
+        cropped_array = img_array[y_start:y_end, x_start:x_end]
+        centers = finde_flecken(cropped_array, min_area, max_area, intensity)
+        grouped = gruppiere_flecken(centers, group_diameter)
+
+        # -----------------------
+        # Session-State für Punkte
+        # -----------------------
+        if "manual_points" not in st.session_state:
+            st.session_state["manual_points"] = []
+        if "auto_points" not in st.session_state:
+            st.session_state["auto_points"] = centers
+
+        # Bild vorbereiten
+        draw_img = img_rgb.copy()
+        draw = ImageDraw.Draw(draw_img)
+
+        # automatische Punkte
+        for x, y in centers:
+            draw.ellipse(
+                [(x + x_start - spot_radius, y + y_start - spot_radius),
+                 (x + x_start + spot_radius, y + y_start + spot_radius)],
+                fill=spot_color
+            )
+
+        # manuelle Punkte
+        for x, y in st.session_state["manual_points"]:
+            draw.ellipse(
+                [(x - spot_radius, y - spot_radius),
+                 (x + spot_radius, y + spot_radius)],
+                fill="#00FF00"  # grün für manuelle Punkte
+            )
+
+        # Gruppenkreise
+        for gruppe in grouped:
+            if gruppe:
+                xs, ys = zip(*gruppe)
+                x_mean = int(np.mean(xs))
+                y_mean = int(np.mean(ys))
+                radius = group_diameter / 2
+                draw.ellipse(
+                    [(x_mean + x_start - radius, y_mean + y_start - radius),
+                     (x_mean + x_start + radius, y_mean + y_start + radius)],
+                    outline=circle_color, width=circle_width
+                )
+
+        # -----------------------
+        # Interaktive Fläche (Canvas)
+        # -----------------------
+        st.markdown("### ✋ Manuelle Punktbearbeitung")
+        canvas_result = st_canvas(
+            fill_color="rgba(255, 0, 0, 0.3)",
+            stroke_width=1,
+            stroke_color="red",
+            background_image=draw_img,
+            update_streamlit=True,
+            height=h,
+            width=w,
+            drawing_mode="point",
+            key="canvas"
+        )
+
+        # Punkte speichern
+        if canvas_result.json_data is not None:
+            for obj in canvas_result.json_data["objects"]:
+                if obj["type"] == "circle":
+                    cx = obj["left"]
+                    cy = obj["top"]
+                    new_point = (int(cx), int(cy))
+                    if new_point not in st.session_state["manual_points"]:
+                        st.session_state["manual_points"].append(new_point)
+
+        # Buttons zur Verwaltung
+        col_btn1, col_btn2, col_btn3 = st.columns(3)
+        if col_btn1.button("🖱️ Letzten Punkt löschen"):
+            if st.session_state["manual_points"]:
+                st.session_state["manual_points"].pop()
+                st.rerun()
+        if col_btn2.button("♻️ Alle manuell gesetzten Punkte löschen"):
+            st.session_state["manual_points"].clear()
+            st.rerun()
+        if col_btn3.button("💾 Punkte speichern (Session)"):
+            st.sidebar.success(f"{len(st.session_state['manual_points'])} Punkte gespeichert.")
+
+        # Ergebnisanzeige
+        st.image(draw_img, caption="🎯 Ergebnisbild mit Punkten", use_container_width=True)
 
 # -----------------------
 # Kreis-Ausschnitt-Modus (unverändert)
