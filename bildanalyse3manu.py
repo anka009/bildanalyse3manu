@@ -80,7 +80,6 @@ def fleckengruppen_modus():
             preset_key = f"preset{slot}"
             if preset_key in st.session_state:
                 params = st.session_state[preset_key]
-                # Nur Defaults setzen
                 st.session_state["loaded_min_area"]       = params["min_area"]
                 st.session_state["loaded_max_area"]       = params["max_area"]
                 st.session_state["loaded_group_diameter"] = params["group_diameter"]
@@ -90,7 +89,7 @@ def fleckengruppen_modus():
             else:
                 st.sidebar.warning(f"⚠️ Slot {slot} ist leer.")
 
-        # Slider mit Defaults aus Session State
+        # --- Slider mit Defaults aus Session State ---
         min_default       = st.session_state.get("loaded_min_area", 30)
         max_default       = st.session_state.get("loaded_max_area", 250)
         group_default     = st.session_state.get("loaded_group_diameter", 60)
@@ -101,26 +100,11 @@ def fleckengruppen_modus():
         y_start = st.slider("Start-Y", 0, h - 1, 0, key="y_start")
         y_end   = st.slider("End-Y", y_start + 1, h, h, key="y_end")
 
-        min_area = st.slider(
-            "Minimale Fleckengröße", 10, 500,
-            value=st.session_state.get("loaded_min_area", 30),
-            key="min_area"
-        )
-        max_area = st.slider(
-            "Maximale Fleckengröße", min_area, 1000,
-            value=st.session_state.get("loaded_max_area", 250),
-            key="max_area"
-        )
-        group_diameter = st.slider(
-            "Gruppendurchmesser", 20, 500,
-            value=st.session_state.get("loaded_group_diameter", 60),
-            key="group_diameter"
-        )
-        intensity = st.slider(
-            "Intensitäts-Schwelle", 0, 255,
-            value=st.session_state.get("loaded_intensity", 25),
-            key="intensity"
-        )
+        min_area = st.slider("Minimale Fleckengröße", 10, 500, value=min_default, key="min_area")
+        max_default = max(max_default, min_area)  # sicherstellen, dass max >= min
+        max_area = st.slider("Maximale Fleckengröße", min_area, 1000, value=max_default, key="max_area")
+        group_diameter = st.slider("Gruppendurchmesser", 20, 500, value=group_default, key="group_diameter")
+        intensity = st.slider("Intensitäts-Schwelle", 0, 255, value=intensity_default, key="intensity")
 
         # Speichern
         if save_clicked:
