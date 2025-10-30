@@ -4,6 +4,18 @@ import numpy as np
 from scipy.ndimage import label, find_objects
 import pandas as pd
 from io import BytesIO
+import json
+import os
+
+# Pfad zur Preset-Datei
+preset_datei = "einstellungen_presets.json"
+
+# Presets laden oder leeres Dictionary erstellen
+if os.path.exists(preset_datei):
+    with open(preset_datei, "r") as f:
+        presets = json.load(f)
+else:
+    presets = {}
 
 # Seiteneinstellungen
 st.set_page_config(page_title="Bildanalyse Komfort-App", layout="wide")
@@ -53,6 +65,14 @@ circle_color = st.sidebar.color_picker("🎨 Farbe für Fleckengruppen", "#FF000
 spot_color = st.sidebar.color_picker("🟦 Farbe für einzelne Flecken", "#00FFFF")
 circle_width = st.sidebar.slider("✒️ Liniendicke (Gruppen)", 1, 10, 6)
 spot_radius = st.sidebar.slider("🔘 Flecken-Radius", 1, 20, 10)
+preset_auswahl = st.sidebar.selectbox("Preset wählen", ["Set1", "Set2", "Set3", "Set4"])
+preset = presets.get(preset_auswahl, {})
+min_fleck = st.sidebar.slider("Minimale Fleckengröße", 1, 100, preset.get("min_fleck", 10))
+max_fleck = st.sidebar.slider("Maximale Fleckengröße", 1, 100, preset.get("max_fleck", 50))
+gruppendurchmesser = st.sidebar.slider("Gruppendurchmesser", 1, 100, preset.get("gruppendurchmesser", 30))
+intensitaetsschwelle = st.sidebar.slider("Intensitäts-Schwelle", 0.0, 1.0, preset.get("intensitaetsschwelle", 0.5))
+liniendicke = st.sidebar.slider("Liniendicke", 1, 10, preset.get("liniendicke", 2))
+flecken_radius = st.sidebar.slider("Flecken-Radius", 1, 50, preset.get("flecken_radius", 10))
 
 # Fleckengruppen-Modus
 def fleckengruppen_modus():
@@ -96,6 +116,18 @@ def fleckengruppen_modus():
         col_fleck, col_gruppe = st.columns(2)
         col_fleck.metric("Erkannte Flecken", len(centers))
         col_gruppe.metric("Erkannte Gruppen", len(grouped))
+if st.sidebar.button("Preset speichern"):
+    presets[preset_auswahl] = {
+        "min_fleck": min_fleck,
+        "max_fleck": max_fleck,
+        "gruppendurchmesser": gruppendurchmesser,
+        "intensitaetsschwelle": intensitaetsschwelle,
+        "liniendicke": liniendicke,
+        "flecken_radius": flecken_radius
+    }
+    with open(preset_datei, "w") as f:
+        json.dump(presets, f)
+    st.sidebar.success(f"{preset_auswahl} gespeichert!")
 
 # Kreis-Ausschnitt-Modus
 def kreis_modus():
