@@ -54,6 +54,29 @@ spot_color = st.sidebar.color_picker("🟦 Farbe für einzelne Flecken", "#00FFF
 circle_width = st.sidebar.slider("✒️ Liniendicke (Gruppen)", 1, 10, 6)
 spot_radius = st.sidebar.slider("🔘 Flecken-Radius", 1, 20, 10)
 # --- Parameter speichern/laden ---
+st.sidebar.markdown("### 💾 Analyse-Parameter speichern/laden")
+
+slot = st.sidebar.selectbox("Speicherplatz wählen", [1, 2, 3, 4])
+
+if st.sidebar.button("📥 In Slot speichern"):
+    st.session_state[f"preset{slot}"] = {
+        "min_area": st.session_state.min_area,
+        "max_area": st.session_state.max_area,
+        "group_diameter": st.session_state.group_diameter,
+        "intensity": st.session_state.intensity,
+    }
+    st.sidebar.success(f"Parameter in Slot {slot} gespeichert!")
+
+if st.sidebar.button("📤 Aus Slot laden"):
+    if f"preset{slot}" in st.session_state:
+        params = st.session_state[f"preset{slot}"]
+        for k, v in params.items():
+            st.session_state[k] = v
+        st.sidebar.success(f"Parameter aus Slot {slot} geladen!")
+    else:
+        st.sidebar.warning(f"Slot {slot} ist noch leer.")
+
+# --- Parameter speichern/laden ---
 st.sidebar.markdown("### 💾 Parameter speichern/laden")
 
 # Alle aktuellen Parameter in ein Dict packen
@@ -93,10 +116,10 @@ def fleckengruppen_modus():
         x_end = st.slider("End-X", x_start + 1, w, w)
         y_start = st.slider("Start-Y", 0, h - 1, 0)
         y_end = st.slider("End-Y", y_start + 1, h, h)
-        min_area = st.slider("Minimale Fleckengröße", 10, 500, 30)
-        max_area = st.slider("Maximale Fleckengröße", min_area, 1000, 250)
-        group_diameter = st.slider("Gruppendurchmesser", 20, 500, 60)
-        intensity = st.slider("Intensitäts-Schwelle", 0, 255, value=25)
+        min_area = st.slider("Minimale Fleckengröße", 10, 500, 30, key="min_area")
+        max_area = st.slider("Maximale Fleckengröße", min_area, 1000, 250, key="max_area")
+        group_diameter = st.slider("Gruppendurchmesser", 20, 500, 60, key="group_diameter")
+        intensity = st.slider("Intensitäts-Schwelle", 0, 255, value=25, key="intensity")
     with col2:
         cropped_array = img_array[y_start:y_end, x_start:x_end]
         centers = finde_flecken(cropped_array, min_area, max_area, intensity)
