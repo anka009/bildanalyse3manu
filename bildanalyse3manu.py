@@ -152,7 +152,18 @@ def fleckengruppen_modus():
         final_img = final_img.convert("RGB")
 
         # Anzeige skalieren (nur für UI)
-        show_img = final_img.resize((display_w, display_h), resample=Image.LANCZOS)
+        import numpy as np
+from PIL import Image
+
+# final_img = PIL.Image mit allen Zeichnungen
+final_img = final_img.convert("RGB")
+
+# Konvertiere sicher zu NumPy Array
+show_img_np = np.array(final_img)
+
+# Streamlit zeigt Array
+st.image(show_img_np, caption="🎯 Bild mit automatischen + manuellen Punkten", use_container_width=True)
+
         st.image(show_img, caption="🎯 Bild mit automatischen + manuellen Punkten", use_container_width=True)
 
         # Statistik
