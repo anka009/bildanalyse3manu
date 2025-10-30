@@ -53,6 +53,36 @@ circle_color = st.sidebar.color_picker("🎨 Farbe für Fleckengruppen", "#FF000
 spot_color = st.sidebar.color_picker("🟦 Farbe für einzelne Flecken", "#00FFFF")
 circle_width = st.sidebar.slider("✒️ Liniendicke (Gruppen)", 1, 10, 6)
 spot_radius = st.sidebar.slider("🔘 Flecken-Radius", 1, 20, 10)
+# --- Parameter speichern/laden ---
+st.sidebar.markdown("### 💾 Parameter speichern/laden")
+
+# Alle aktuellen Parameter in ein Dict packen
+current_params = {
+    "circle_color": circle_color,
+    "spot_color": spot_color,
+    "circle_width": circle_width,
+    "spot_radius": spot_radius,
+}
+
+# Auswahl Speicherplatz
+slot = st.sidebar.selectbox("Speicherplatz wählen", [1, 2, 3, 4])
+
+# Speichern
+if st.sidebar.button("📥 In Slot speichern"):
+    st.session_state[f"preset{slot}"] = current_params.copy()
+    st.sidebar.success(f"Parameter in Slot {slot} gespeichert!")
+
+# Laden
+if st.sidebar.button("📤 Aus Slot laden"):
+    if f"preset{slot}" in st.session_state:
+        params = st.session_state[f"preset{slot}"]
+        circle_color = params["circle_color"]
+        spot_color = params["spot_color"]
+        circle_width = params["circle_width"]
+        spot_radius = params["spot_radius"]
+        st.sidebar.success(f"Parameter aus Slot {slot} geladen!")
+    else:
+        st.sidebar.warning(f"Slot {slot} ist noch leer.")
 
 # Fleckengruppen-Modus
 def fleckengruppen_modus():
