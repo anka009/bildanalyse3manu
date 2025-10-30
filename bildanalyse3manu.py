@@ -63,11 +63,27 @@ def fleckengruppen_modus():
         y_start = st.slider("Start-Y", 0, h - 1, 0, key="y_start")
         y_end   = st.slider("End-Y", y_start + 1, h, h, key="y_end")
 
-        # Analyse-Parameter mit Keys
-        min_area       = st.slider("Minimale Fleckengröße", 10, 500, 30, key="min_area")
-        max_area       = st.slider("Maximale Fleckengröße", min_area, 1000, 250, key="max_area")
-        group_diameter = st.slider("Gruppendurchmesser", 20, 500, 60, key="group_diameter")
-        intensity      = st.slider("Intensitäts-Schwelle", 0, 255, value=25, key="intensity")
+        # Analyse-Parameter mit Defaults aus Session State
+        min_area = st.slider(
+            "Minimale Fleckengröße", 10, 500,
+            st.session_state.get("min_area", 30),
+            key="min_area"
+        )
+        max_area = st.slider(
+            "Maximale Fleckengröße", min_area, 1000,
+            st.session_state.get("max_area", 250),
+            key="max_area"
+        )
+        group_diameter = st.slider(
+            "Gruppendurchmesser", 20, 500,
+            st.session_state.get("group_diameter", 60),
+            key="group_diameter"
+        )
+        intensity = st.slider(
+            "Intensitäts-Schwelle", 0, 255,
+            st.session_state.get("intensity", 25),
+            key="intensity"
+        )
 
         # --- Parameter speichern/laden ---
         st.markdown("### 💾 Analyse-Parameter speichern/laden")
@@ -75,24 +91,24 @@ def fleckengruppen_modus():
 
         if st.button("📥 In Slot speichern", key="save_button"):
             st.session_state[f"preset{slot}"] = {
-                "min_area": st.session_state.min_area,
-                "max_area": st.session_state.max_area,
-                "group_diameter": st.session_state.group_diameter,
-                "intensity": st.session_state.intensity,
+                "min_area": min_area,
+                "max_area": max_area,
+                "group_diameter": group_diameter,
+                "intensity": intensity,
             }
             st.success(f"Parameter in Slot {slot} gespeichert!")
 
         if st.button("📤 Aus Slot laden", key="load_button"):
             if f"preset{slot}" in st.session_state:
                 params = st.session_state[f"preset{slot}"]
-
-                # gezielt zurückschreiben
+                # Werte in Session schreiben
                 st.session_state.min_area       = params["min_area"]
                 st.session_state.max_area       = params["max_area"]
                 st.session_state.group_diameter = params["group_diameter"]
                 st.session_state.intensity      = params["intensity"]
 
                 st.success(f"Parameter aus Slot {slot} geladen!")
+                st.experimental_rerun()  # App neu starten, damit Slider springen
             else:
                 st.warning(f"Slot {slot} ist noch leer.")
 
