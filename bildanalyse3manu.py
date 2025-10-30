@@ -46,6 +46,27 @@ def gruppiere_flecken(centers, group_diameter):
                 visited.add(j)
         grouped.append(gruppe)
     return grouped
+import json
+
+# Preset-Datei
+preset_datei = "parameter_presets.json"
+
+# Presets laden
+try:
+    with open(preset_datei, "r") as f:
+        presets = json.load(f)
+except:
+    presets = {}
+
+# Auswahl und Laden
+preset_name = st.sidebar.selectbox("🗂️ Parameter-Set wählen", ["Set1", "Set2", "Set3", "Set4"])
+preset = presets.get(preset_name, {})
+
+# Werte aus Preset übernehmen (wenn vorhanden)
+circle_color = st.sidebar.color_picker("🎨 Farbe für Fleckengruppen", preset.get("circle_color", "#FF0000"))
+spot_color = st.sidebar.color_picker("🟦 Farbe für einzelne Flecken", preset.get("spot_color", "#00FFFF"))
+circle_width = st.sidebar.slider("✒️ Liniendicke (Gruppen)", 1, 10, preset.get("circle_width", 6))
+spot_radius = st.sidebar.slider("🔘 Flecken-Radius", 1, 20, preset.get("spot_radius", 10))
 
 # Sidebar-Einstellungen
 modus = st.sidebar.radio("Analyse-Modus wählen", ["Fleckengruppen", "Kreis-Ausschnitt"])
@@ -53,6 +74,16 @@ circle_color = st.sidebar.color_picker("🎨 Farbe für Fleckengruppen", "#FF000
 spot_color = st.sidebar.color_picker("🟦 Farbe für einzelne Flecken", "#00FFFF")
 circle_width = st.sidebar.slider("✒️ Liniendicke (Gruppen)", 1, 10, 6)
 spot_radius = st.sidebar.slider("🔘 Flecken-Radius", 1, 20, 10)
+if st.sidebar.button("💾 Aktuelles Set speichern"):
+    presets[preset_name] = {
+        "circle_color": circle_color,
+        "spot_color": spot_color,
+        "circle_width": circle_width,
+        "spot_radius": spot_radius
+    }
+    with open(preset_datei, "w") as f:
+        json.dump(presets, f, indent=2)
+    st.sidebar.success(f"{preset_name} wurde gespeichert ✅")
 
 # Fleckengruppen-Modus
 def fleckengruppen_modus():
