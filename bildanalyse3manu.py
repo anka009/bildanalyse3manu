@@ -112,10 +112,10 @@ def fleckengruppen_modus():
     col1, col2 = st.columns([1, 2])
 
     with col1:
-        x_start = st.slider("Start-X", 0, w - 1, 0)
-        x_end = st.slider("End-X", x_start + 1, w, w)
-        y_start = st.slider("Start-Y", 0, h - 1, 0)
-        y_end = st.slider("End-Y", y_start + 1, h, h)
+        x_start = st.slider("Start-X", 0, w - 1, 0, key="x_start")
+        x_end = st.slider("End-X", x_start + 1, w, w, key="x_end")
+        y_start = st.slider("Start-Y", 0, h - 1, 0, key="y_start")
+        y_end = st.slider("End-Y", y_start + 1, h, h, key="y_end")
 
         # Slider mit Keys, damit sie in st.session_state landen
         min_area = st.slider("Minimale Fleckengröße", 10, 500, 30, key="min_area")
@@ -125,7 +125,7 @@ def fleckengruppen_modus():
 
         # --- Parameter speichern/laden ---
         st.markdown("### 💾 Analyse-Parameter speichern/laden")
-        slot = st.selectbox("Speicherplatz wählen", [1, 2, 3, 4], key="slot_select")
+        slot = st.selectbox("Speicherplatz wählen", [1, 2, 3, 4], key="slot_selectbox")
 
         if st.button("📥 In Slot speichern", key="save_button"):
             st.session_state[f"preset{slot}"] = {
