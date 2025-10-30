@@ -46,82 +46,29 @@ def gruppiere_flecken(centers, group_diameter):
                 visited.add(j)
         grouped.append(gruppe)
     return grouped
-
 # Sidebar-Einstellungen
 modus = st.sidebar.radio("Analyse-Modus wählen", ["Fleckengruppen", "Kreis-Ausschnitt"])
-circle_color = st.sidebar.color_picker("🎨 Farbe für Fleckengruppen", "#FF0000")
-spot_color = st.sidebar.color_picker("🟦 Farbe für einzelne Flecken", "#00FFFF")
-circle_width = st.sidebar.slider("✒️ Liniendicke (Gruppen)", 1, 10, 6)
-spot_radius = st.sidebar.slider("🔘 Flecken-Radius", 1, 20, 10)
-# --- Parameter speichern/laden ---
-st.sidebar.markdown("### 💾 Analyse-Parameter speichern/laden")
+circle_color = st.sidebar.color_picker("🎨 Farbe für Fleckengruppen", "#FF0000", key="circle_color")
+spot_color   = st.sidebar.color_picker("🟦 Farbe für einzelne Flecken", "#00FFFF", key="spot_color")
+circle_width = st.sidebar.slider("✒️ Liniendicke (Gruppen)", 1, 10, 6, key="circle_width")
+spot_radius  = st.sidebar.slider("🔘 Flecken-Radius", 1, 20, 10, key="spot_radius")
 
-slot = st.sidebar.selectbox("Speicherplatz wählen", [1, 2, 3, 4])
-
-if st.sidebar.button("📥 In Slot speichern"):
-    st.session_state[f"preset{slot}"] = {
-        "min_area": st.session_state.min_area,
-        "max_area": st.session_state.max_area,
-        "group_diameter": st.session_state.group_diameter,
-        "intensity": st.session_state.intensity,
-    }
-    st.sidebar.success(f"Parameter in Slot {slot} gespeichert!")
-
-if st.sidebar.button("📤 Aus Slot laden"):
-    if f"preset{slot}" in st.session_state:
-        params = st.session_state[f"preset{slot}"]
-        for k, v in params.items():
-            st.session_state[k] = v
-        st.sidebar.success(f"Parameter aus Slot {slot} geladen!")
-    else:
-        st.sidebar.warning(f"Slot {slot} ist noch leer.")
-
-# --- Parameter speichern/laden ---
-st.sidebar.markdown("### 💾 Parameter speichern/laden")
-
-# Alle aktuellen Parameter in ein Dict packen
-current_params = {
-    "circle_color": circle_color,
-    "spot_color": spot_color,
-    "circle_width": circle_width,
-    "spot_radius": spot_radius,
-}
-
-# Auswahl Speicherplatz
-slot = st.sidebar.selectbox("Speicherplatz wählen", [1, 2, 3, 4])
-
-# Speichern
-if st.sidebar.button("📥 In Slot speichern"):
-    st.session_state[f"preset{slot}"] = current_params.copy()
-    st.sidebar.success(f"Parameter in Slot {slot} gespeichert!")
-
-# Laden
-if st.sidebar.button("📤 Aus Slot laden"):
-    if f"preset{slot}" in st.session_state:
-        params = st.session_state[f"preset{slot}"]
-        circle_color = params["circle_color"]
-        spot_color = params["spot_color"]
-        circle_width = params["circle_width"]
-        spot_radius = params["spot_radius"]
-        st.sidebar.success(f"Parameter aus Slot {slot} geladen!")
-    else:
-        st.sidebar.warning(f"Slot {slot} ist noch leer.")
-
+# Fleckengruppen-Modus
 def fleckengruppen_modus():
     st.subheader("🧠 Fleckengruppen erkennen")
     col1, col2 = st.columns([1, 2])
 
     with col1:
         x_start = st.slider("Start-X", 0, w - 1, 0, key="x_start")
-        x_end = st.slider("End-X", x_start + 1, w, w, key="x_end")
+        x_end   = st.slider("End-X", x_start + 1, w, w, key="x_end")
         y_start = st.slider("Start-Y", 0, h - 1, 0, key="y_start")
-        y_end = st.slider("End-Y", y_start + 1, h, h, key="y_end")
+        y_end   = st.slider("End-Y", y_start + 1, h, h, key="y_end")
 
-        # Slider mit Keys, damit sie in st.session_state landen
-        min_area = st.slider("Minimale Fleckengröße", 10, 500, 30, key="min_area")
-        max_area = st.slider("Maximale Fleckengröße", min_area, 1000, 250, key="max_area")
+        # Analyse-Parameter mit Keys
+        min_area       = st.slider("Minimale Fleckengröße", 10, 500, 30, key="min_area")
+        max_area       = st.slider("Maximale Fleckengröße", min_area, 1000, 250, key="max_area")
         group_diameter = st.slider("Gruppendurchmesser", 20, 500, 60, key="group_diameter")
-        intensity = st.slider("Intensitäts-Schwelle", 0, 255, value=25, key="intensity")
+        intensity      = st.slider("Intensitäts-Schwelle", 0, 255, value=25, key="intensity")
 
         # --- Parameter speichern/laden ---
         st.markdown("### 💾 Analyse-Parameter speichern/laden")
