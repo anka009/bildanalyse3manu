@@ -67,49 +67,47 @@ def fleckengruppen_modus():
     col1, col2 = st.columns([1, 2])
 
     with col1:
-        # 1) Slots: zuerst definieren und ggf. laden, bevor die Slider erzeugt werden
+        # --- Speicher/Lade-Bereich ---
         st.markdown("### 💾 Analyse-Parameter speichern/laden")
         slot = st.selectbox("Speicherplatz wählen", [1, 2, 3, 4], key="slot_selectbox")
 
-        # Buttons in einer Form kapseln, um klare Submit-Momente zu haben
+        # Buttons in einer Form kapseln
         with st.form(key="preset_form"):
             save_clicked = st.form_submit_button("📥 In Slot speichern")
             load_clicked = st.form_submit_button("📤 Aus Slot laden")
 
-        # 2) Wenn laden gedrückt wurde: Defaults in separate Keys setzen, dann rerun
+        # Laden: Defaults setzen + rerun
         if load_clicked:
             preset_key = f"preset{slot}"
             if preset_key in st.session_state:
                 params = st.session_state[preset_key]
-                # Nur Defaults setzen, NICHT direkt die existierenden Widget-Keys
-                st.session_state["loaded_min_area"]       = int(params.get("min_area", 30))
-                st.session_state["loaded_max_area"]       = int(params.get("max_area", 250))
-                st.session_state["loaded_group_diameter"] = int(params.get("group_diameter", 60))
-                st.session_state["loaded_intensity"]      = int(params.get("intensity", 25))
-                st.success(f"Parameter aus Slot {slot} geladen!")
+                st.session_state["loaded_min_area"]       = params["min_area"]
+                st.session_state["loaded_max_area"]       = params["max_area"]
+                st.session_state["loaded_group_diameter"] = params["group_diameter"]
+                st.session_state["loaded_intensity"]      = params["intensity"]
+                st.sidebar.info(f"📤 Parameter aus Slot {slot} geladen – Slider werden aktualisiert …")
                 st.rerun()
             else:
-                st.warning(f"Slot {slot} ist noch leer.")
+                st.sidebar.warning(f"⚠️ Slot {slot} ist leer.")
 
-        # 3) Slider werden nun mit Defaults aus loaded_* erzeugt
+        # Slider mit Defaults aus Session State
+        min_default      = st.session_state.get("loaded_min_area", 30)
+        max_default      = st.session_state.get("loaded_max_area", 250)
+        group_default    = st.session_state.get("loaded_group_diameter", 60)
+        intensity_default= st.session_state.get("loaded_intensity", 25)
+
         x_start = st.slider("Start-X", 0, w - 1, 0, key="x_start")
         x_end   = st.slider("End-X", x_start + 1, w, w, key="x_end")
         y_start = st.slider("Start-Y", 0, h - 1, 0, key="y_start")
         y_end   = st.slider("End-Y", y_start + 1, h, h, key="y_end")
 
-        min_default = st.session_state.get("loaded_min_area", 30)
-        max_default = st.session_state.get("loaded_max_area", 250)
-        group_default = st.session_state.get("loaded_group_diameter", 60)
-        intensity_default = st.session_state.get("loaded_intensity", 25)
-
         min_area = st.slider("Minimale Fleckengröße", 10, 500, value=min_default, key="min_area")
-        # Achtung: Bound-Abhängigkeit. Der Default für max_area darf kleiner als min_area sein → clampen:
-        max_default = max(max_default, min_area)
+        max_default = max(max_default, min_area)  # clamp
         max_area = st.slider("Maximale Fleckengröße", min_area, 1000, value=max_default, key="max_area")
         group_diameter = st.slider("Gruppendurchmesser", 20, 500, value=group_default, key="group_diameter")
         intensity = st.slider("Intensitäts-Schwelle", 0, 255, value=intensity_default, key="intensity")
 
-        # 4) Speichern: schreibt in presetX, nicht in Widget-Keys
+        # Speichern
         if save_clicked:
             st.session_state[f"preset{slot}"] = {
                 "min_area": min_area,
@@ -117,7 +115,12 @@ def fleckengruppen_modus():
                 "group_diameter": group_diameter,
                 "intensity": intensity,
             }
-            st.success(f"Parameter in Slot {slot} gespeichert!")
+            st.sidebar.success(f"✅ Parameter in Slot {slot} gespeichert!")
+
+        # Anzeige der gespeicherten Werte
+        if f"preset{slot}" in st.session_state:
+            st.sidebar.write("🔎 Gespeicherte Werte in diesem Slot:")
+            st.sidebar.json(st.session_state[f"preset{slot}"])
 
     with col2:
         cropped_array = img_array[y_start:y_end, x_start:x_end]
