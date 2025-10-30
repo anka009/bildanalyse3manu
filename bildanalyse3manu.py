@@ -66,12 +66,20 @@ from streamlit_image_coordinates import streamlit_image_coordinates
 from PIL import Image, ImageDraw
 import numpy as np
 
+from streamlit_image_coordinates import streamlit_image_coordinates
+from PIL import Image, ImageDraw
+import numpy as np
+import streamlit as st
+
 def fleckengruppen_modus():
-    global img_rgb, img_array  # Zugriff auf globales Originalbild
+    global img_rgb, img_array  # Zugriff auf das Originalbild
 
     st.subheader("🧠 Fleckengruppen erkennen")
     col1, col2 = st.columns([1, 2])
 
+    # -------------------------------
+    # 1️⃣ Linke Spalte: Parameter
+    # -------------------------------
     with col1:
         st.markdown("### Analyse-Parameter")
         min_area = st.slider("Minimale Fleckengröße", 10, 500, 30, key="min_area")
@@ -79,40 +87,40 @@ def fleckengruppen_modus():
         group_diameter = st.slider("Gruppendurchmesser", 20, 500, 60, key="group_diameter")
         intensity = st.slider("Intensitäts-Schwelle", 0, 255, 25, key="intensity")
 
+        # Buttons für manuelle Punkteverwaltung
+        if "manual_points" not in st.session_state:
+            st.session_state["manual_points"] = []
+
+        col_btn1, col_btn2 = st.columns(2)
+        if col_btn1.button("❌ Letzten Punkt löschen"):
+            if st.session_state["manual_points"]:
+                st.session_state["manual_points"].pop()
+        if col_btn2.button("♻️ Alle manuell gesetzten Punkte löschen"):
+            st.session_state["manual_points"].clear()
+
+    # -------------------------------
+    # 2️⃣ Rechte Spalte: Bild & Klicks
+    # -------------------------------
     with col2:
-        # ===========================
-        # 1️⃣ Originalgröße sichern
-        # ===========================
+        # Originalgröße
         orig_w, orig_h = img_rgb.size
 
-        # ===========================
-        # 2️⃣ Bild fürs Frontend skalieren
-        # ===========================
-        display_w = 800  # feste Breite (stabil für Cloud)
+        # Anzeigegröße fixieren
+        display_w = 800
         scale = display_w / orig_w
         display_h = int(orig_h * scale)
         display_img = img_rgb.resize((display_w, display_h))
 
-        # ===========================
-        # 3️⃣ Klick-Koordinaten erfassen (auf skaliertem Bild)
-        # ===========================
+        # Klickerfassung auf skaliertem Bild
         clicked = streamlit_image_coordinates(display_img, key="click_img")
 
-        # ===========================
-        # 4️⃣ Klick-Koordinaten rückskalieren
-        # ===========================
         if clicked is not None:
-            x_scaled, y_scaled = int(clicked["x"] / scale), int(clicked["y"] / scale)
-
-            if "manual_points" not in st.session_state:
-                st.session_state["manual_points"] = []
-
+            x_scaled = int(clicked["x"] / scale)
+            y_scaled = int(clicked["y"] / scale)
             st.session_state["manual_points"].append((x_scaled, y_scaled))
             st.rerun()
 
-        # ===========================
-        # 5️⃣ Bild mit Punkten zeichnen
-        # ===========================
+        # Bild mit Punkten vorbereiten
         final_img = img_rgb.copy()
         draw = ImageDraw.Draw(final_img)
 
@@ -122,22 +130,36 @@ def fleckengruppen_modus():
             draw.ellipse([(x - 4, y - 4), (x + 4, y + 4)], fill="#00FFFF")
 
         # manuelle Punkte
-        for x, y in st.session_state.get("manual_points", []):
+        for x, y in st.session_state["manual_points"]:
             draw.ellipse([(x - 4, y - 4), (x + 4, y + 4)], fill="#00FF00")
 
-        # ===========================
-        # 6️⃣ Anzeige fürs Frontend skalieren
-        # ===========================
+        # Gruppenkreise (optional, basierend auf automatische Flecken)
+        grouped = gruppiere_flecken(centers, group_diameter)
+        for gruppe in grouped:
+            if gruppe:
+                xs, ys = zip(*gruppe)
+                x_mean = int(np.mean(xs))
+                y_mean = int(np.mean(ys))
+                radius = group_diameter / 2
+                draw.ellipse(
+                    [(x_mean - radius, y_mean - radius),
+                     (x_mean + radius, y_mean + radius)],
+                    outline="#FF0000", width=3
+                )
+
+        # sicherstellen, dass Bild RGB ist (fix für Streamlit)
+        if final_img.mode != "RGB":
+            final_img = final_img.convert("RGB")
+
+        # Anzeige skalieren (nur für UI)
         show_img = final_img.resize((display_w, display_h))
         st.image(show_img, caption="🎯 Bild mit automatischen + manuellen Punkten", use_container_width=True)
 
-        # ===========================
-        # 7️⃣ Statistik anzeigen
-        # ===========================
+        # Statistik
         st.markdown("---")
         col_a, col_b = st.columns(2)
         col_a.metric("Automatische Flecken", len(centers))
-        col_b.metric("Manuelle Punkte", len(st.session_state.get("manual_points", [])))
+        col_b.metric("Manuelle Punkte", len(st.session_state["manual_points"]))
 
 # -----------------------
 # Kreis-Ausschnitt-Modus (unverändert)
