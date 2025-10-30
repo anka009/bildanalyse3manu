@@ -71,6 +71,11 @@ from PIL import Image, ImageDraw
 import numpy as np
 import streamlit as st
 
+from streamlit_image_coordinates import streamlit_image_coordinates
+from PIL import Image, ImageDraw
+import numpy as np
+import streamlit as st
+
 def fleckengruppen_modus():
     global img_rgb, img_array  # Zugriff auf das Originalbild
 
@@ -102,18 +107,14 @@ def fleckengruppen_modus():
     # 2️⃣ Rechte Spalte: Bild & Klicks
     # -------------------------------
     with col2:
-        # Originalgröße
-        orig_w, orig_h = img_rgb.size
-
         # Anzeigegröße fixieren
         display_w = 800
-        scale = display_w / orig_w
-        display_h = int(orig_h * scale)
-        display_img = img_rgb.resize((display_w, display_h))
+        scale = display_w / img_rgb.width
+        display_h = int(img_rgb.height * scale)
+        display_img = img_rgb.resize((display_w, display_h), resample=Image.LANCZOS)
 
         # Klickerfassung auf skaliertem Bild
         clicked = streamlit_image_coordinates(display_img, key="click_img")
-
         if clicked is not None:
             x_scaled = int(clicked["x"] / scale)
             y_scaled = int(clicked["y"] / scale)
@@ -133,7 +134,7 @@ def fleckengruppen_modus():
         for x, y in st.session_state["manual_points"]:
             draw.ellipse([(x - 4, y - 4), (x + 4, y + 4)], fill="#00FF00")
 
-        # Gruppenkreise (optional, basierend auf automatische Flecken)
+        # Gruppenkreise (rot)
         grouped = gruppiere_flecken(centers, group_diameter)
         for gruppe in grouped:
             if gruppe:
@@ -147,12 +148,11 @@ def fleckengruppen_modus():
                     outline="#FF0000", width=3
                 )
 
-        # sicherstellen, dass Bild RGB ist (fix für Streamlit)
-        if final_img.mode != "RGB":
-            final_img = final_img.convert("RGB")
+        # Sicherstellen, dass Bild RGB ist (fix für Streamlit)
+        final_img = final_img.convert("RGB")
 
         # Anzeige skalieren (nur für UI)
-        show_img = final_img.resize((display_w, display_h))
+        show_img = final_img.resize((display_w, display_h), resample=Image.LANCZOS)
         st.image(show_img, caption="🎯 Bild mit automatischen + manuellen Punkten", use_container_width=True)
 
         # Statistik
