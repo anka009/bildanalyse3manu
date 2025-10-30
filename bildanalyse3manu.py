@@ -86,8 +86,17 @@ def fleckengruppen_modus():
         if st.button("📤 Aus Slot laden", key="load_button"):
             if f"preset{slot}" in st.session_state:
                 params = st.session_state[f"preset{slot}"]
-                for k, v in params.items():
-                    st.session_state[k] = v
+
+                # Nur bekannte Keys überschreiben
+                if "min_area" in params:
+                    st.session_state.min_area = int(params["min_area"])
+                if "max_area" in params:
+                    st.session_state.max_area = int(params["max_area"])
+                if "group_diameter" in params:
+                    st.session_state.group_diameter = int(params["group_diameter"])
+                if "intensity" in params:
+                    st.session_state.intensity = int(params["intensity"])
+
                 st.success(f"Parameter aus Slot {slot} geladen!")
             else:
                 st.warning(f"Slot {slot} ist noch leer.")
