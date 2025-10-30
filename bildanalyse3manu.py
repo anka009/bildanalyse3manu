@@ -18,7 +18,7 @@ img_rgb = Image.open(uploaded_file).convert("RGB")
 img_gray = img_rgb.convert("L")
 img_array = np.array(img_gray)
 w, h = img_rgb.size
-
+ 
 # Hilfsfunktionen
 def finde_flecken(cropped_array, min_area, max_area, intensity):
     mask = cropped_array < intensity
