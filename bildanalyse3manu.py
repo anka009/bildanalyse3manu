@@ -107,31 +107,59 @@ if st.sidebar.button("📤 Aus Slot laden"):
     else:
         st.sidebar.warning(f"Slot {slot} ist noch leer.")
 
-# Fleckengruppen-Modus
 def fleckengruppen_modus():
     st.subheader("🧠 Fleckengruppen erkennen")
     col1, col2 = st.columns([1, 2])
+
     with col1:
         x_start = st.slider("Start-X", 0, w - 1, 0)
         x_end = st.slider("End-X", x_start + 1, w, w)
         y_start = st.slider("Start-Y", 0, h - 1, 0)
         y_end = st.slider("End-Y", y_start + 1, h, h)
+
+        # Slider mit Keys, damit sie in st.session_state landen
         min_area = st.slider("Minimale Fleckengröße", 10, 500, 30, key="min_area")
         max_area = st.slider("Maximale Fleckengröße", min_area, 1000, 250, key="max_area")
         group_diameter = st.slider("Gruppendurchmesser", 20, 500, 60, key="group_diameter")
         intensity = st.slider("Intensitäts-Schwelle", 0, 255, value=25, key="intensity")
+
+        # --- Parameter speichern/laden ---
+        st.markdown("### 💾 Analyse-Parameter speichern/laden")
+        slot = st.selectbox("Speicherplatz wählen", [1, 2, 3, 4], key="slot_select")
+
+        if st.button("📥 In Slot speichern", key="save_button"):
+            st.session_state[f"preset{slot}"] = {
+                "min_area": st.session_state.min_area,
+                "max_area": st.session_state.max_area,
+                "group_diameter": st.session_state.group_diameter,
+                "intensity": st.session_state.intensity,
+            }
+            st.success(f"Parameter in Slot {slot} gespeichert!")
+
+        if st.button("📤 Aus Slot laden", key="load_button"):
+            if f"preset{slot}" in st.session_state:
+                params = st.session_state[f"preset{slot}"]
+                for k, v in params.items():
+                    st.session_state[k] = v
+                st.success(f"Parameter aus Slot {slot} geladen!")
+            else:
+                st.warning(f"Slot {slot} ist noch leer.")
+
     with col2:
         cropped_array = img_array[y_start:y_end, x_start:x_end]
         centers = finde_flecken(cropped_array, min_area, max_area, intensity)
         grouped = gruppiere_flecken(centers, group_diameter)
+
         draw_img = img_rgb.copy()
         draw = ImageDraw.Draw(draw_img)
+
         for x, y in centers:
             draw.ellipse(
                 [(x + x_start - spot_radius, y + y_start - spot_radius),
                  (x + x_start + spot_radius, y + y_start + spot_radius)],
                 fill=spot_color
             )
+
         for gruppe in grouped:
             if gruppe:
                 xs, ys = zip(*gruppe)
@@ -143,6 +171,7 @@ def fleckengruppen_modus():
                      (x_mean + x_start + radius, y_mean + y_start + radius)],
                     outline=circle_color, width=circle_width
                 )
+
         st.image(draw_img, caption="🎯 Ergebnisbild mit Markierungen", use_container_width=True)
         st.markdown("---")
         st.markdown("### 🧮 Ergebnisse")
