@@ -4,43 +4,10 @@ import numpy as np
 from scipy.ndimage import label, find_objects
 import pandas as pd
 from io import BytesIO
-import json
-import os
 
 # Seiteneinstellungen
 st.set_page_config(page_title="Bildanalyse Komfort-App", layout="wide")
 st.title("🧪 Bildanalyse Komfort-App")
-
-# Preset-Datei laden
-preset_datei = "parameter_presets.json"
-if os.path.exists(preset_datei):
-    with open(preset_datei, "r") as f:
-        presets = json.load(f)
-else:
-    presets = {}
-
-# Preset-Auswahl
-preset_name = st.sidebar.selectbox("🗂️ Parameter-Set wählen", ["Set1", "Set2", "Set3", "Set4"], key="preset_select")
-preset = presets.get(preset_name, {})
-
-# Sidebar-Einstellungen mit Preset-Werten
-modus = st.sidebar.radio("Analyse-Modus wählen", ["Fleckengruppen", "Kreis-Ausschnitt"], key="modus")
-circle_color = st.sidebar.color_picker("🎨 Farbe für Fleckengruppen", preset.get("circle_color", "#FF0000"), key="circle_color")
-spot_color = st.sidebar.color_picker("🟦 Farbe für einzelne Flecken", preset.get("spot_color", "#00FFFF"), key="spot_color")
-circle_width = st.sidebar.slider("✒️ Liniendicke (Gruppen)", 1, 10, preset.get("circle_width", 6), key="circle_width")
-spot_radius = st.sidebar.slider("🔘 Flecken-Radius", 1, 20, preset.get("spot_radius", 10), key="spot_radius")
-
-# Preset speichern
-if st.sidebar.button("💾 Aktuelles Set speichern", key="save_preset"):
-    presets[preset_name] = {
-        "circle_color": circle_color,
-        "spot_color": spot_color,
-        "circle_width": circle_width,
-        "spot_radius": spot_radius
-    }
-    with open(preset_datei, "w") as f:
-        json.dump(presets, f, indent=2)
-    st.sidebar.success(f"{preset_name} wurde gespeichert ✅")
 
 # Bild-Upload
 uploaded_file = st.sidebar.file_uploader("📁 Bild auswählen", type=["png", "jpg", "jpeg", "tif", "tiff"])
@@ -80,19 +47,26 @@ def gruppiere_flecken(centers, group_diameter):
         grouped.append(gruppe)
     return grouped
 
+# Sidebar-Einstellungen
+modus = st.sidebar.radio("Analyse-Modus wählen", ["Fleckengruppen", "Kreis-Ausschnitt"])
+circle_color = st.sidebar.color_picker("🎨 Farbe für Fleckengruppen", "#FF0000")
+spot_color = st.sidebar.color_picker("🟦 Farbe für einzelne Flecken", "#00FFFF")
+circle_width = st.sidebar.slider("✒️ Liniendicke (Gruppen)", 1, 10, 6)
+spot_radius = st.sidebar.slider("🔘 Flecken-Radius", 1, 20, 10)
+
 # Fleckengruppen-Modus
 def fleckengruppen_modus():
     st.subheader("🧠 Fleckengruppen erkennen")
     col1, col2 = st.columns([1, 2])
     with col1:
-        x_start = st.slider("Start-X", 0, w - 1, 0, key="x_start")
-        x_end = st.slider("End-X", x_start + 1, w, w, key="x_end")
-        y_start = st.slider("Start-Y", 0, h - 1, 0, key="y_start")
-        y_end = st.slider("End-Y", y_start + 1, h, h, key="y_end")
-        min_area = st.slider("Minimale Fleckengröße", 10, 500, 30, key="min_area")
-        max_area = st.slider("Maximale Fleckengröße", min_area, 1000, 250, key="max_area")
-        group_diameter = st.slider("Gruppendurchmesser", 20, 500, 60, key="group_diameter")
-        intensity = st.slider("Intensitäts-Schwelle", 0, 255, value=25, key="intensity")
+        x_start = st.slider("Start-X", 0, w - 1, 0)
+        x_end = st.slider("End-X", x_start + 1, w, w)
+        y_start = st.slider("Start-Y", 0, h - 1, 0)
+        y_end = st.slider("End-Y", y_start + 1, h, h)
+        min_area = st.slider("Minimale Fleckengröße", 10, 500, 30)
+        max_area = st.slider("Maximale Fleckengröße", min_area, 1000, 250)
+        group_diameter = st.slider("Gruppendurchmesser", 20, 500, 60)
+        intensity = st.slider("Intensitäts-Schwelle", 0, 255, value=25)
     with col2:
         cropped_array = img_array[y_start:y_end, x_start:x_end]
         centers = finde_flecken(cropped_array, min_area, max_area, intensity)
@@ -128,9 +102,9 @@ def kreis_modus():
     st.subheader("🎯 Kreis-Ausschnitt wählen")
     col1, col2 = st.columns([1, 2])
     with col1:
-        center_x = st.slider("🞄 Mittelpunkt-X", 0, w - 1, w // 2, key="center_x")
-        center_y = st.slider("🞄 Mittelpunkt-Y", 0, h - 1, h // 2, key="center_y")
-        radius = st.slider("🔵 Radius", 10, min(w, h) // 2, 500, key="kreis_radius")
+        center_x = st.slider("🞄 Mittelpunkt-X", 0, w - 1, w // 2)
+        center_y = st.slider("🞄 Mittelpunkt-Y", 0, h - 1, h // 2)
+        radius = st.slider("🔵 Radius", 10, min(w, h) // 2, 500)
     with col2:
         draw_img = img_rgb.copy()
         draw = ImageDraw.Draw(draw_img)
@@ -141,7 +115,7 @@ def kreis_modus():
         )
         st.image(draw_img, caption="🖼️ Kreis-Vorschau", use_container_width=True)
 
-    if st.checkbox("🎬 Nur Ausschnitt anzeigen", key="show_crop"):
+    if st.checkbox("🎬 Nur Ausschnitt anzeigen"):
         mask = Image.new("L", (w, h), 0)
         mask_draw = ImageDraw.Draw(mask)
         mask_draw.ellipse(
