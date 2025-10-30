@@ -87,7 +87,7 @@ def fleckengruppen_modus():
                 st.session_state["loaded_group_diameter"] = int(params.get("group_diameter", 60))
                 st.session_state["loaded_intensity"]      = int(params.get("intensity", 25))
                 st.success(f"Parameter aus Slot {slot} geladen!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.warning(f"Slot {slot} ist noch leer.")
 
