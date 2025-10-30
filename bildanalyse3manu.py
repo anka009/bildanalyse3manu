@@ -65,25 +65,16 @@ spot_radius  = st.sidebar.slider("🔘 Flecken-Radius", 1, 20, 10, key="spot_rad
 from streamlit_image_coordinates import streamlit_image_coordinates
 from PIL import Image, ImageDraw
 import numpy as np
-
-from streamlit_image_coordinates import streamlit_image_coordinates
-from PIL import Image, ImageDraw
-import numpy as np
-import streamlit as st
-
-from streamlit_image_coordinates import streamlit_image_coordinates
-from PIL import Image, ImageDraw
-import numpy as np
 import streamlit as st
 
 def fleckengruppen_modus():
-    global img_rgb, img_array  # Zugriff auf das Originalbild
+    global img_rgb, img_array  # Originalbild und Graustufenarray
 
     st.subheader("🧠 Fleckengruppen erkennen")
     col1, col2 = st.columns([1, 2])
 
     # -------------------------------
-    # 1️⃣ Linke Spalte: Parameter
+    # 1️⃣ Linke Spalte: Parameter + Buttons
     # -------------------------------
     with col1:
         st.markdown("### Analyse-Parameter")
@@ -92,7 +83,7 @@ def fleckengruppen_modus():
         group_diameter = st.slider("Gruppendurchmesser", 20, 500, 60, key="group_diameter")
         intensity = st.slider("Intensitäts-Schwelle", 0, 255, 25, key="intensity")
 
-        # Buttons für manuelle Punkteverwaltung
+        # manuelle Punkteverwaltung
         if "manual_points" not in st.session_state:
             st.session_state["manual_points"] = []
 
@@ -121,18 +112,20 @@ def fleckengruppen_modus():
             st.session_state["manual_points"].append((x_scaled, y_scaled))
             st.rerun()
 
-        # Bild mit Punkten vorbereiten
-        final_img = img_rgb.copy()
+        # -------------------------------
+        # Bild mit allen Punkten vorbereiten
+        # -------------------------------
+        final_img = img_rgb.copy()  # Kopie des Originalbildes
         draw = ImageDraw.Draw(final_img)
 
         # automatische Flecken
         centers = finde_flecken(img_array, min_area, max_area, intensity)
         for x, y in centers:
-            draw.ellipse([(x - 4, y - 4), (x + 4, y + 4)], fill="#00FFFF")
+            draw.ellipse([(x-4, y-4), (x+4, y+4)], fill="#00FFFF")
 
         # manuelle Punkte
         for x, y in st.session_state["manual_points"]:
-            draw.ellipse([(x - 4, y - 4), (x + 4, y + 4)], fill="#00FF00")
+            draw.ellipse([(x-4, y-4), (x+4, y+4)], fill="#00FF00")
 
         # Gruppenkreise (rot)
         grouped = gruppiere_flecken(centers, group_diameter)
@@ -148,27 +141,20 @@ def fleckengruppen_modus():
                     outline="#FF0000", width=3
                 )
 
-        # Sicherstellen, dass Bild RGB ist (fix für Streamlit)
+        # -------------------------------
+        # 3️⃣ RGB-Fix + Anzeige
+        # -------------------------------
         final_img = final_img.convert("RGB")
+        show_img_np = np.array(final_img)
+        st.image(show_img_np, caption="🎯 Bild mit automatischen + manuellen Punkten", use_container_width=True)
 
-        # Anzeige skalieren (nur für UI)
-        import numpy as np
-from PIL import Image
-
-# final_img = PIL.Image mit allen Zeichnungen
-final_img = final_img.convert("RGB")
-
-# Konvertiere sicher zu NumPy Array
-show_img_np = np.array(final_img)
-
-# Streamlit zeigt Array (einmal, korrekt eingerückt)
-st.image(show_img_np, caption="🎯 Bild mit automatischen + manuellen Punkten", use_container_width=True)
-
-# Statistik
-st.markdown("---")
-col_a, col_b = st.columns(2)
-col_a.metric("Automatische Flecken", len(centers))
-col_b.metric("Manuelle Punkte", len(st.session_state["manual_points"]))
+        # -------------------------------
+        # 4️⃣ Statistik
+        # -------------------------------
+        st.markdown("---")
+        col_a, col_b = st.columns(2)
+        col_a.metric("Automatische Flecken", len(centers))
+        col_b.metric("Manuelle Punkte", len(st.session_state["manual_points"]))
 
 # -----------------------
 # Kreis-Ausschnitt-Modus (unverändert)
