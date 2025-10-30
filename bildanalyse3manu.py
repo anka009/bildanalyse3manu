@@ -71,7 +71,6 @@ def fleckengruppen_modus():
         st.markdown("### 💾 Analyse-Parameter speichern/laden")
         slot = st.selectbox("Speicherplatz wählen", [1, 2, 3, 4], key="slot_selectbox")
 
-        # Buttons in einer Form kapseln
         with st.form(key="preset_form"):
             save_clicked = st.form_submit_button("📥 In Slot speichern")
             load_clicked = st.form_submit_button("📤 Aus Slot laden")
@@ -81,20 +80,21 @@ def fleckengruppen_modus():
             preset_key = f"preset{slot}"
             if preset_key in st.session_state:
                 params = st.session_state[preset_key]
+                # Nur Defaults setzen
                 st.session_state["loaded_min_area"]       = params["min_area"]
                 st.session_state["loaded_max_area"]       = params["max_area"]
                 st.session_state["loaded_group_diameter"] = params["group_diameter"]
                 st.session_state["loaded_intensity"]      = params["intensity"]
-                st.sidebar.info(f"📤 Parameter aus Slot {slot} geladen – Slider werden aktualisiert …")
+                st.sidebar.info(f"📤 Slot {slot} geladen – Slider werden angepasst …")
                 st.rerun()
             else:
                 st.sidebar.warning(f"⚠️ Slot {slot} ist leer.")
 
         # Slider mit Defaults aus Session State
-        min_default      = st.session_state.get("loaded_min_area", 30)
-        max_default      = st.session_state.get("loaded_max_area", 250)
-        group_default    = st.session_state.get("loaded_group_diameter", 60)
-        intensity_default= st.session_state.get("loaded_intensity", 25)
+        min_default       = st.session_state.get("loaded_min_area", 30)
+        max_default       = st.session_state.get("loaded_max_area", 250)
+        group_default     = st.session_state.get("loaded_group_diameter", 60)
+        intensity_default = st.session_state.get("loaded_intensity", 25)
 
         x_start = st.slider("Start-X", 0, w - 1, 0, key="x_start")
         x_end   = st.slider("End-X", x_start + 1, w, w, key="x_end")
