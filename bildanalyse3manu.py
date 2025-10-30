@@ -53,7 +53,6 @@ spot_color   = st.sidebar.color_picker("🟦 Farbe für einzelne Flecken", "#00F
 circle_width = st.sidebar.slider("✒️ Liniendicke (Gruppen)", 1, 10, 6, key="circle_width")
 spot_radius  = st.sidebar.slider("🔘 Flecken-Radius", 1, 20, 10, key="spot_radius")
 
-# Fleckengruppen-Modus
 def fleckengruppen_modus():
     st.subheader("🧠 Fleckengruppen erkennen")
     col1, col2 = st.columns([1, 2])
@@ -87,15 +86,11 @@ def fleckengruppen_modus():
             if f"preset{slot}" in st.session_state:
                 params = st.session_state[f"preset{slot}"]
 
-                # Nur bekannte Keys überschreiben
-                if "min_area" in params:
-                    st.session_state.min_area = int(params["min_area"])
-                if "max_area" in params:
-                    st.session_state.max_area = int(params["max_area"])
-                if "group_diameter" in params:
-                    st.session_state.group_diameter = int(params["group_diameter"])
-                if "intensity" in params:
-                    st.session_state.intensity = int(params["intensity"])
+                # gezielt zurückschreiben
+                st.session_state.min_area       = params["min_area"]
+                st.session_state.max_area       = params["max_area"]
+                st.session_state.group_diameter = params["group_diameter"]
+                st.session_state.intensity      = params["intensity"]
 
                 st.success(f"Parameter aus Slot {slot} geladen!")
             else:
