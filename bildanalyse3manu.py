@@ -75,15 +75,24 @@ def fleckengruppen_modus():
             save_clicked = st.form_submit_button("📥 In Slot speichern")
             load_clicked = st.form_submit_button("📤 Aus Slot laden")
 
-        # Laden: Defaults setzen + rerun
+        # Laden: Defaults + Widget-Keys setzen, dann rerun
         if load_clicked:
             preset_key = f"preset{slot}"
             if preset_key in st.session_state:
                 params = st.session_state[preset_key]
+
+                # Defaults für nächsten Rerun
                 st.session_state["loaded_min_area"]       = params["min_area"]
                 st.session_state["loaded_max_area"]       = params["max_area"]
                 st.session_state["loaded_group_diameter"] = params["group_diameter"]
                 st.session_state["loaded_intensity"]      = params["intensity"]
+
+                # WICHTIG: auch die Widget-Keys direkt setzen
+                st.session_state["min_area"]       = params["min_area"]
+                st.session_state["max_area"]       = params["max_area"]
+                st.session_state["group_diameter"] = params["group_diameter"]
+                st.session_state["intensity"]      = params["intensity"]
+
                 st.sidebar.info(f"📤 Slot {slot} geladen – Slider werden angepasst …")
                 st.rerun()
             else:
